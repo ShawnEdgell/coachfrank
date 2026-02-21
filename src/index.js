@@ -23,6 +23,27 @@ let lastResponseTime = 0;
 const COOLDOWN_MS = 15000;
 let isThrottled = false;
 
+// --- DYNAMIC VOCABULARY ARRAYS ---
+const insults = [
+  "Jive turkey",
+  "Mall-grabber",
+  "City council square",
+  "Plonk",
+  "Toe-dragger",
+  "Noodle-leg",
+  "Fruit loop",
+  "Narc",
+];
+const slang = [
+  "Far out",
+  "Right on",
+  "Can you dig it?",
+  "Solid",
+  "Bummer",
+  "Heavy",
+  "Keep it greasy",
+];
+
 client.once(Events.ClientReady, (c) => {
   console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
 
@@ -30,7 +51,9 @@ client.once(Events.ClientReady, (c) => {
     ? process.env.GEMINI_API_KEY.substring(0, 6)
     : "NOT FOUND";
   console.log(`🔑 ACTIVE API KEY STARTS WITH: ${keySnippet}`);
-  console.log("🚀 ENGINE: GEMINI 3 FLASH ACTIVE (Clean Setup)");
+  console.log(
+    "🚀 ENGINE: GEMINI 3 FLASH ACTIVE (Dynamic Inject & Safe Memory)",
+  );
   console.log("--------------------------------------------------\n");
 });
 
@@ -65,6 +88,11 @@ client.on(Events.MessageCreate, async (message) => {
     const now = Date.now();
     if (now - lastResponseTime < COOLDOWN_MS) return;
 
+    // --- RANDOMIZER ---
+    // This uses raw JavaScript to pick a random word so the AI doesn't have a choice
+    const randomInsult = insults[Math.floor(Math.random() * insults.length)];
+    const randomSlang = slang[Math.floor(Math.random() * slang.length)];
+
     const prompt = message.content
       .replace(/<@!?\d+>/gi, "")
       .replace(/frank|coach|the legend/gi, "")
@@ -75,27 +103,34 @@ client.on(Events.MessageCreate, async (message) => {
     );
 
     try {
+      // --- SAFE MEMORY (Only grabs last 3 messages to avoid script confusion) ---
+      const fetchedMessages = await message.channel.messages.fetch({
+        limit: 4,
+      });
+      const conversationHistory = fetchedMessages
+        .reverse()
+        .map((m) => {
+          const speaker =
+            m.author.id === client.user.id ? "Coach Frank" : m.author.username;
+          const text = m.content.replace(/<@!?\d+>/gi, "").trim();
+          return `${speaker} said: "${text}"`;
+        })
+        .join("\n");
+
+      // --- THE IRONCLAD PROMPT ---
+      const finalPrompt = `CHAT HISTORY:\n${conversationHistory}\n\nCOACH FRANK INSTRUCTIONS:\nReply directly to ${message.author.username}. \nCRITICAL RULES:\n1. You MUST use the insult "${randomInsult}" in your response.\n2. You MUST use the slang "${randomSlang}" in your response.\n3. DO NOT output code blocks or your name. Just speak naturally.`;
+
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
           {
             role: "user",
-            parts: [
-              {
-                text:
-                  prompt ||
-                  "Someone just brought you up. Say something cranky and 70s.",
-              },
-            ],
+            parts: [{ text: finalPrompt }],
           },
         ],
         config: {
           systemInstruction: coachFrankPersona,
-          temperature: 0.95, // High enough for more "rant" variety
-          // --- THE REPETITION KILLERS ARE REMOVED (G3 Handles this internally) ---
-          thinkingConfig: {
-            thinkingLevel: "low",
-          },
+          temperature: 0.95,
           safetySettings: [
             {
               category: "HARM_CATEGORY_HARASSMENT",
@@ -118,28 +153,32 @@ client.on(Events.MessageCreate, async (message) => {
       });
 
       lastResponseTime = Date.now();
-      const replyText = response.text;
+
+      // Scrubber to keep formatting clean
+      let replyText = response.text
+        .replace(/^Coach Frank:\s*/i, "")
+        .replace(/```[\s\S]*?```/g, (match) => match.replace(/```/g, ""))
+        .trim();
+
       console.log(`[OUTPUT]: ${replyText}`);
       await message.reply(replyText);
     } catch (e) {
       console.error("!!! AI ERROR:", e.message);
 
-      if (e.message.includes("429")) {
-        console.log("🛑 QUOTA HIT: GOING SILENT FOR 5 MINUTES.");
-        await message.reply("GAS TANK'S EMPTY. I'M TAKING 5.");
+      if (e.message.includes("429") || e.message.includes("503")) {
+        console.log("🛑 QUOTA/SERVER HIT: GOING SILENT.");
+        await message.reply(
+          "GAS TANK'S EMPTY OR THE FEDS ARE JAMMING MY SIGNAL. LATER.",
+        );
 
         isThrottled = true;
         setTimeout(() => {
           isThrottled = false;
-          console.log("🔄 CIRCUIT BREAKER RESET.");
         }, 300000);
-
         return;
       }
 
-      if (!e.message.includes("429")) {
-        await message.reply("BUSY CLEANING BEARINGS. LATER.");
-      }
+      await message.reply("BUSY BOILING HOT DOG WATER. LATER.");
     }
   }
 });
