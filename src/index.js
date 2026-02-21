@@ -1,5 +1,8 @@
 const path = require("path");
-require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+// Improved env loading: priority to System Env (Docker) then .env file
+if (!process.env.GEMINI_API_KEY) {
+  require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+}
 
 const { Client, GatewayIntentBits, Events } = require("discord.js");
 const { GoogleGenAI } = require("@google/genai");
@@ -22,6 +25,12 @@ let isThrottled = false;
 
 client.once(Events.ClientReady, (c) => {
   console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
+
+  // THE SNITCH LINE: Verifies the key in the logs without leaking it
+  const keySnippet = process.env.GEMINI_API_KEY
+    ? process.env.GEMINI_API_KEY.substring(0, 6)
+    : "NOT FOUND";
+  console.log(`🔑 ACTIVE API KEY STARTS WITH: ${keySnippet}`);
   console.log("--------------------------------------------------\n");
 });
 
@@ -67,7 +76,8 @@ client.on(Events.MessageCreate, async (message) => {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+        // SWAPPED TO THE HIGH-LIMIT MODEL
+        model: "gemini-2.5-flash-lite",
         contents: [
           {
             role: "user",
@@ -95,8 +105,6 @@ client.on(Events.MessageCreate, async (message) => {
 
       if (e.message.includes("429")) {
         console.log("🛑 QUOTA HIT: GOING SILENT FOR 5 MINUTES.");
-
-        // Removed the name reference as requested
         await message.reply("GAS TANK'S EMPTY. I'M TAKING 5.");
 
         isThrottled = true;
