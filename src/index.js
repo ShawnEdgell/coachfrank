@@ -26,11 +26,11 @@ let isThrottled = false;
 client.once(Events.ClientReady, (c) => {
   console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
 
-  // THE SNITCH LINE: Verifies the key in the logs without leaking it
   const keySnippet = process.env.GEMINI_API_KEY
     ? process.env.GEMINI_API_KEY.substring(0, 6)
     : "NOT FOUND";
   console.log(`🔑 ACTIVE API KEY STARTS WITH: ${keySnippet}`);
+  console.log("🚀 ENGINE: GEMINI 3 FLASH ACTIVE");
   console.log("--------------------------------------------------\n");
 });
 
@@ -48,7 +48,7 @@ client.on(Events.MessageCreate, async (message) => {
   if (contentLower === "!frank reset") {
     isThrottled = false;
     lastResponseTime = 0;
-    console.log("🔄 MANUAL RESET: Circuit breaker flipped.");
+    console.log("🔄 MANUAL RESET: Engine restarted.");
     return message.reply("FINE. I'm back. Don't blow the fuse again.");
   }
 
@@ -76,8 +76,7 @@ client.on(Events.MessageCreate, async (message) => {
 
     try {
       const response = await ai.models.generateContent({
-        // SWAPPED TO THE HIGH-LIMIT MODEL
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3-flash-preview",
         contents: [
           {
             role: "user",
@@ -93,6 +92,10 @@ client.on(Events.MessageCreate, async (message) => {
         config: {
           systemInstruction: coachFrankPersona,
           temperature: 0.9,
+          // Added thinking config for Gemini 3
+          thinkingConfig: {
+            thinkingLevel: "low",
+          },
         },
       });
 
