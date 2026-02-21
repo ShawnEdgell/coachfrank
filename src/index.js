@@ -15,9 +15,10 @@ const client = new Client({
   ],
 });
 
-// Anti-spam / Quota protection
+// --- PROTECTION SYSTEM ---
 let lastResponseTime = 0;
 const COOLDOWN_MS = 15000; // 15 seconds between any response
+let isThrottled = false; // The Circuit Breaker flag
 
 client.once(Events.ClientReady, (c) => {
   console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
@@ -27,18 +28,24 @@ client.once(Events.ClientReady, (c) => {
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
 
+  // 1. Check Circuit Breaker: If we're in "Timeout," don't even look at the message
+  if (isThrottled) return;
+
   const contentLower = message.content.toLowerCase();
   const isMentioned = message.mentions.has(client.user.id);
 
   const nicknames = ["frank", "coach", "the legend"];
   const nameFound = nicknames.some((name) => contentLower.includes(name));
 
-  // Always reply to @tags. Reply to names 60% of the time.
+  // Logic: Always reply to direct @mentions.
+  // Reply to keywords 60% of the time (random > 0.4).
   const shouldRespond = isMentioned || (nameFound && Math.random() > 0.4);
 
   if (shouldRespond) {
     const now = Date.now();
-    if (now - lastResponseTime < COOLDOWN_MS) return; // Silent skip if too fast
+
+    // 2. Check Cooldown: Prevent spamming
+    if (now - lastResponseTime < COOLDOWN_MS) return;
 
     const prompt = message.content
       .replace(/<@!?\d+>/gi, "")
@@ -51,7 +58,6 @@ client.on(Events.MessageCreate, async (message) => {
 
     try {
       const response = await ai.models.generateContent({
-        // SWITCHED TO STABLE GEMINI 2.0 FLASH
         model: "gemini-2.0-flash",
         contents: [
           {
@@ -77,7 +83,22 @@ client.on(Events.MessageCreate, async (message) => {
       await message.reply(replyText);
     } catch (e) {
       console.error("!!! AI ERROR:", e.message);
-      // Only reply with error if it's NOT a rate limit (429)
+
+      // 3. Trigger Circuit Breaker if Quota Exceeded (429)
+      if (e.message.includes("429")) {
+        console.log("🛑 QUOTA HIT: GOING SILENT FOR 5 MINUTES.");
+        isThrottled = true;
+
+        // Reset the breaker after 5 minutes automatically
+        setTimeout(() => {
+          isThrottled = false;
+          console.log("🔄 CIRCUIT BREAKER RESET: Coach Frank is back.");
+        }, 300000);
+
+        return; // Silent exit
+      }
+
+      // Only reply for non-quota errors (like safety filters)
       if (!e.message.includes("429")) {
         await message.reply("I'M BUSY CLEANING MY BEARINGS! TRY LATER!");
       }
