@@ -92,10 +92,19 @@ client.on(Events.MessageCreate, async (message) => {
         config: {
           systemInstruction: coachFrankPersona,
           temperature: 0.9,
-          // Added thinking config for Gemini 3
           thinkingConfig: {
             thinkingLevel: "low",
           },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_ONLY_HIGH",
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_ONLY_HIGH",
+            },
+          ],
         },
       });
 
