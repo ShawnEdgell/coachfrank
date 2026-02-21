@@ -17,8 +17,8 @@ const client = new Client({
 
 // --- PROTECTION SYSTEM ---
 let lastResponseTime = 0;
-const COOLDOWN_MS = 15000; // 15 seconds between any response
-let isThrottled = false; // The Circuit Breaker flag
+const COOLDOWN_MS = 15000;
+let isThrottled = false;
 
 client.once(Events.ClientReady, (c) => {
   console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
@@ -28,23 +28,34 @@ client.once(Events.ClientReady, (c) => {
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
 
-  // 1. Check Circuit Breaker: If we're in "Timeout," don't even look at the message
+  const contentLower = message.content.toLowerCase();
+
+  // --- 1. HEALTH CHECK & MANUAL RESET ---
+  // Commands to check if he's alive or force him to wake up
+  if (contentLower === "!frank status") {
+    const status = isThrottled
+      ? "🛑 THROTTLED (Out of gas)"
+      : "✅ ACTIVE (Looking for trouble)";
+    return message.reply(`STATUS: ${status}`);
+  }
+
+  if (contentLower === "!frank reset") {
+    isThrottled = false;
+    console.log("🔄 MANUAL RESET: Circuit breaker flipped by user.");
+    return message.reply("FINE. I'm back. Don't blow the fuse again.");
+  }
+
+  // --- 2. THE CIRCUIT BREAKER ---
   if (isThrottled) return;
 
-  const contentLower = message.content.toLowerCase();
   const isMentioned = message.mentions.has(client.user.id);
-
   const nicknames = ["frank", "coach", "the legend"];
   const nameFound = nicknames.some((name) => contentLower.includes(name));
 
-  // Logic: Always reply to direct @mentions.
-  // Reply to keywords 60% of the time (random > 0.4).
   const shouldRespond = isMentioned || (nameFound && Math.random() > 0.4);
 
   if (shouldRespond) {
     const now = Date.now();
-
-    // 2. Check Cooldown: Prevent spamming
     if (now - lastResponseTime < COOLDOWN_MS) return;
 
     const prompt = message.content
@@ -84,23 +95,25 @@ client.on(Events.MessageCreate, async (message) => {
     } catch (e) {
       console.error("!!! AI ERROR:", e.message);
 
-      // 3. Trigger Circuit Breaker if Quota Exceeded (429)
       if (e.message.includes("429")) {
         console.log("🛑 QUOTA HIT: GOING SILENT FOR 5 MINUTES.");
-        isThrottled = true;
 
-        // Reset the breaker after 5 minutes automatically
+        // One-liner jab at the dev before going dark
+        await message.reply(
+          "GAS TANK'S EMPTY. Shawn blew the quota. I'm taking 5.",
+        );
+
+        isThrottled = true;
         setTimeout(() => {
           isThrottled = false;
           console.log("🔄 CIRCUIT BREAKER RESET: Coach Frank is back.");
         }, 300000);
 
-        return; // Silent exit
+        return;
       }
 
-      // Only reply for non-quota errors (like safety filters)
       if (!e.message.includes("429")) {
-        await message.reply("I'M BUSY CLEANING MY BEARINGS! TRY LATER!");
+        await message.reply("BUSY CLEANING BEARINGS. LATER.");
       }
     }
   }
