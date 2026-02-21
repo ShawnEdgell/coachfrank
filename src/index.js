@@ -31,7 +31,6 @@ client.on(Events.MessageCreate, async (message) => {
   const contentLower = message.content.toLowerCase();
 
   // --- 1. HEALTH CHECK & MANUAL RESET ---
-  // Commands to check if he's alive or force him to wake up
   if (contentLower === "!frank status") {
     const status = isThrottled
       ? "🛑 THROTTLED (Out of gas)"
@@ -52,10 +51,13 @@ client.on(Events.MessageCreate, async (message) => {
   const nicknames = ["frank", "coach", "the legend"];
   const nameFound = nicknames.some((name) => contentLower.includes(name));
 
-  const shouldRespond = isMentioned || (nameFound && Math.random() > 0.4);
+  // REMOVED RANDOMNESS: Always responds if mentioned or name found
+  const shouldRespond = isMentioned || nameFound;
 
   if (shouldRespond) {
     const now = Date.now();
+
+    // Check Cooldown
     if (now - lastResponseTime < COOLDOWN_MS) return;
 
     const prompt = message.content
@@ -98,7 +100,7 @@ client.on(Events.MessageCreate, async (message) => {
       if (e.message.includes("429")) {
         console.log("🛑 QUOTA HIT: GOING SILENT FOR 5 MINUTES.");
 
-        // One-liner jab at the dev before going dark
+        // Final jab at the dev
         await message.reply(
           "GAS TANK'S EMPTY. Shawn blew the quota. I'm taking 5.",
         );
