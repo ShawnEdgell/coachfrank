@@ -30,17 +30,16 @@ client.on(Events.MessageCreate, async (message) => {
 
   const contentLower = message.content.toLowerCase();
 
-  // --- 1. HEALTH CHECK & MANUAL RESET ---
+  // --- 1. HEALTH CHECK & MANUAL RESET (BYPASS ZONE) ---
   if (contentLower === "!frank status") {
-    const status = isThrottled
-      ? "🛑 THROTTLED (Out of gas)"
-      : "✅ ACTIVE (Looking for trouble)";
+    const status = isThrottled ? "🛑 THROTTLED (Out of gas)" : "✅ ACTIVE";
     return message.reply(`STATUS: ${status}`);
   }
 
   if (contentLower === "!frank reset") {
     isThrottled = false;
-    console.log("🔄 MANUAL RESET: Circuit breaker flipped by user.");
+    lastResponseTime = 0;
+    console.log("🔄 MANUAL RESET: Circuit breaker flipped.");
     return message.reply("FINE. I'm back. Don't blow the fuse again.");
   }
 
@@ -51,13 +50,10 @@ client.on(Events.MessageCreate, async (message) => {
   const nicknames = ["frank", "coach", "the legend"];
   const nameFound = nicknames.some((name) => contentLower.includes(name));
 
-  // REMOVED RANDOMNESS: Always responds if mentioned or name found
   const shouldRespond = isMentioned || nameFound;
 
   if (shouldRespond) {
     const now = Date.now();
-
-    // Check Cooldown
     if (now - lastResponseTime < COOLDOWN_MS) return;
 
     const prompt = message.content
@@ -100,15 +96,13 @@ client.on(Events.MessageCreate, async (message) => {
       if (e.message.includes("429")) {
         console.log("🛑 QUOTA HIT: GOING SILENT FOR 5 MINUTES.");
 
-        // Final jab at the dev
-        await message.reply(
-          "GAS TANK'S EMPTY. Shawn blew the quota. I'm taking 5.",
-        );
+        // Removed the name reference as requested
+        await message.reply("GAS TANK'S EMPTY. I'M TAKING 5.");
 
         isThrottled = true;
         setTimeout(() => {
           isThrottled = false;
-          console.log("🔄 CIRCUIT BREAKER RESET: Coach Frank is back.");
+          console.log("🔄 CIRCUIT BREAKER RESET.");
         }, 300000);
 
         return;
