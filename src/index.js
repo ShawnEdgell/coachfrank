@@ -30,9 +30,7 @@ client.once(Events.ClientReady, (c) => {
     ? process.env.GEMINI_API_KEY.substring(0, 6)
     : "NOT FOUND";
   console.log(`🔑 ACTIVE API KEY STARTS WITH: ${keySnippet}`);
-  console.log(
-    "🚀 ENGINE: GEMINI 3 FLASH ACTIVE (Repetition Penalties Applied)",
-  );
+  console.log("🚀 ENGINE: GEMINI 3 FLASH ACTIVE");
   console.log("--------------------------------------------------\n");
 });
 
@@ -93,10 +91,8 @@ client.on(Events.MessageCreate, async (message) => {
         ],
         config: {
           systemInstruction: coachFrankPersona,
-          temperature: 0.95, // Slighly higher for more "rant" variety
-          // --- THE REPETITION KILLERS ---
-          frequencyPenalty: 0.8, // Heavily penalizes repeating the same words (bushings, turkey, etc.)
-          presencePenalty: 0.6, // Encourages him to talk about NEW things
+          temperature: 0.95, // High enough for more "rant" variety
+          // --- THE REPETITION KILLERS ARE REMOVED (G3 Handles this internally) ---
           thinkingConfig: {
             thinkingLevel: "low",
           },
