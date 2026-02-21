@@ -15,6 +15,10 @@ const client = new Client({
   ],
 });
 
+// Anti-spam / Quota protection
+let lastResponseTime = 0;
+const COOLDOWN_MS = 15000; // 15 seconds between any response
+
 client.once(Events.ClientReady, (c) => {
   console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
   console.log("--------------------------------------------------\n");
@@ -26,29 +30,29 @@ client.on(Events.MessageCreate, async (message) => {
   const contentLower = message.content.toLowerCase();
   const isMentioned = message.mentions.has(client.user.id);
 
-  // Define names he responds to without a tag
   const nicknames = ["frank", "coach", "the legend"];
   const nameFound = nicknames.some((name) => contentLower.includes(name));
 
-  // Logic: Always reply to direct @mentions.
-  // Reply to "Frank/Coach" keywords 60% of the time to keep it natural.
+  // Always reply to @tags. Reply to names 60% of the time.
   const shouldRespond = isMentioned || (nameFound && Math.random() > 0.4);
 
   if (shouldRespond) {
-    // Clean the prompt: Remove the <@ID> tag and the keywords
+    const now = Date.now();
+    if (now - lastResponseTime < COOLDOWN_MS) return; // Silent skip if too fast
+
     const prompt = message.content
-      .replace(/<@!?\d+>/gi, "") // Remove Discord mentions
-      .replace(/frank|coach|the legend/gi, "") // Remove keywords
+      .replace(/<@!?\d+>/gi, "")
+      .replace(/frank|coach|the legend/gi, "")
       .trim();
 
     console.log(
       `[TRIGGER]: ${isMentioned ? "Direct Mention" : "Keyword Found"}`,
     );
-    console.log(`[INPUT]: ${prompt || "Just hanging out"}`);
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        // SWITCHED TO STABLE GEMINI 2.0 FLASH
+        model: "gemini-2.0-flash",
         contents: [
           {
             role: "user",
@@ -67,14 +71,16 @@ client.on(Events.MessageCreate, async (message) => {
         },
       });
 
+      lastResponseTime = Date.now();
       const replyText = response.text;
       console.log(`[OUTPUT]: ${replyText}`);
-
-      // Use message.reply to keep the conversation threaded
       await message.reply(replyText);
     } catch (e) {
       console.error("!!! AI ERROR:", e.message);
-      await message.reply("I'M BUSY CLEANING MY BEARINGS! TRY LATER!");
+      // Only reply with error if it's NOT a rate limit (429)
+      if (!e.message.includes("429")) {
+        await message.reply("I'M BUSY CLEANING MY BEARINGS! TRY LATER!");
+      }
     }
   }
 });
