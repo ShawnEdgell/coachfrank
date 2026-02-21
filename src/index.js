@@ -30,7 +30,9 @@ client.once(Events.ClientReady, (c) => {
     ? process.env.GEMINI_API_KEY.substring(0, 6)
     : "NOT FOUND";
   console.log(`🔑 ACTIVE API KEY STARTS WITH: ${keySnippet}`);
-  console.log("🚀 ENGINE: GEMINI 3 FLASH ACTIVE");
+  console.log(
+    "🚀 ENGINE: GEMINI 3 FLASH ACTIVE (Repetition Penalties Applied)",
+  );
   console.log("--------------------------------------------------\n");
 });
 
@@ -39,7 +41,7 @@ client.on(Events.MessageCreate, async (message) => {
 
   const contentLower = message.content.toLowerCase();
 
-  // --- 1. HEALTH CHECK & MANUAL RESET (BYPASS ZONE) ---
+  // --- 1. HEALTH CHECK & MANUAL RESET ---
   if (contentLower === "!frank status") {
     const status = isThrottled ? "🛑 THROTTLED (Out of gas)" : "✅ ACTIVE";
     return message.reply(`STATUS: ${status}`);
@@ -91,7 +93,10 @@ client.on(Events.MessageCreate, async (message) => {
         ],
         config: {
           systemInstruction: coachFrankPersona,
-          temperature: 0.9,
+          temperature: 0.95, // Slighly higher for more "rant" variety
+          // --- THE REPETITION KILLERS ---
+          frequencyPenalty: 0.8, // Heavily penalizes repeating the same words (bushings, turkey, etc.)
+          presencePenalty: 0.6, // Encourages him to talk about NEW things
           thinkingConfig: {
             thinkingLevel: "low",
           },
@@ -102,6 +107,14 @@ client.on(Events.MessageCreate, async (message) => {
             },
             {
               category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_ONLY_HIGH",
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_ONLY_HIGH",
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
               threshold: "BLOCK_ONLY_HIGH",
             },
           ],
