@@ -16,38 +16,65 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-  console.log(`\n✅ COACH FRANK IS BACK: ${c.user.tag}`);
+  console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
   console.log("--------------------------------------------------\n");
 });
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
 
+  const contentLower = message.content.toLowerCase();
   const isMentioned = message.mentions.has(client.user.id);
-  const keywordFound = message.content.toLowerCase().includes("coach frank");
 
-  if (isMentioned || keywordFound) {
-    const prompt = message.content.replace(/<@!\d+>|coach frank/gi, "").trim();
-    console.log(`[INPUT]: ${prompt || "Empty prompt"}`);
+  // Define names he responds to without a tag
+  const nicknames = ["frank", "coach", "the legend"];
+  const nameFound = nicknames.some((name) => contentLower.includes(name));
+
+  // Logic: Always reply to direct @mentions.
+  // Reply to "Frank/Coach" keywords 60% of the time to keep it natural.
+  const shouldRespond = isMentioned || (nameFound && Math.random() > 0.4);
+
+  if (shouldRespond) {
+    // Clean the prompt: Remove the <@ID> tag and the keywords
+    const prompt = message.content
+      .replace(/<@!?\d+>/gi, "") // Remove Discord mentions
+      .replace(/frank|coach|the legend/gi, "") // Remove keywords
+      .trim();
+
+    console.log(
+      `[TRIGGER]: ${isMentioned ? "Direct Mention" : "Keyword Found"}`,
+    );
+    console.log(`[INPUT]: ${prompt || "Just hanging out"}`);
 
     try {
-      // This is the direct call that was working before we tried models.get()
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
-          { role: "user", parts: [{ text: prompt || "SAY SOMETHING!" }] },
+          {
+            role: "user",
+            parts: [
+              {
+                text:
+                  prompt ||
+                  "Someone just brought you up. Say something cranky and 70s.",
+              },
+            ],
+          },
         ],
         config: {
           systemInstruction: coachFrankPersona,
-          temperature: 0.9, // Balanced variety
+          temperature: 0.9,
         },
       });
 
-      console.log(`[OUTPUT]: ${response.text}`);
-      await message.reply(response.text);
+      const replyText = response.text;
+      console.log(`[OUTPUT]: ${replyText}`);
+
+      // Use message.reply to keep the conversation threaded
+      await message.reply(replyText);
     } catch (e) {
       console.error("!!! AI ERROR:", e.message);
-      await message.reply("I'M BUSY SKATING! THE MAN IS WATCHING! TRY LATER!");
+      await message.reply("I'M BUSY CLEANING MY BEARINGS! TRY LATER!");
     }
   }
 });
