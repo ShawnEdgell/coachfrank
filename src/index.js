@@ -19,12 +19,11 @@ const client = new Client({
 });
 
 // --- M-CORP WHITELIST ---
-// Replace these with the actual IDs from your Discord Dev Portal
 const mcorpIds = [
-  "YOUR_TODD_ID",
-  "YOUR_GARY_ID",
-  "YOUR_KYLE_ID",
-  "YOUR_DEREK_ID",
+  "1474996063147397252", // Todd
+  "1475000145878716499", // Gary
+  "1475000634309611584", // Kyle
+  "1475000750584102944", // Derek
 ];
 
 let lastResponseTime = 0;
@@ -83,8 +82,9 @@ client.on(Events.MessageCreate, async (message) => {
   const isMentioned = message.mentions.has(client.user.id);
   const nicknames = ["frank", "coach", "the legend"];
   const nameFound = nicknames.some((name) => contentLower.includes(name));
+  const isMcorpBot = message.author.bot && mcorpIds.includes(message.author.id);
 
-  if (isMentioned || nameFound) {
+  if (isMentioned || nameFound || isMcorpBot) {
     const now = Date.now();
     if (now - lastResponseTime < COOLDOWN_MS) return;
 
