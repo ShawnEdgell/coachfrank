@@ -18,6 +18,15 @@ const client = new Client({
   ],
 });
 
+// --- M-CORP WHITELIST ---
+// Replace these with the actual IDs from your Discord Dev Portal
+const mcorpIds = [
+  "YOUR_TODD_ID",
+  "YOUR_GARY_ID",
+  "YOUR_KYLE_ID",
+  "YOUR_DEREK_ID",
+];
+
 let lastResponseTime = 0;
 const COOLDOWN_MS = 15000;
 let isThrottled = false;
@@ -47,7 +56,13 @@ client.once(Events.ClientReady, (c) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  if (message.author.bot) return;
+  // ALLOW M-CORP BOTS THROUGH, IGNORE OTHERS
+  if (message.author.bot) {
+    if (!mcorpIds.includes(message.author.id)) return;
+    console.log(
+      `[TARGET ACQUIRED]: Frank heard a corporate narc: ${message.author.username}`,
+    );
+  }
 
   const contentLower = message.content.toLowerCase();
 
@@ -76,6 +91,12 @@ client.on(Events.MessageCreate, async (message) => {
     const randomInsult = insults[Math.floor(Math.random() * insults.length)];
     const randomSlang = slang[Math.floor(Math.random() * slang.length)];
 
+    // RANT LOGIC: 15% chance to trigger a massive rant
+    const isRant = Math.random() < 0.15;
+    const rantInstruction = isRant
+      ? "RANT MODE ACTIVE: Ignore your word count limit. Go on a massive, unhinged, multi-paragraph 1970s gasoline-fueled rage. Truly lose your mind."
+      : "Keep it concise and punchy.";
+
     try {
       const fetchedMessages = await message.channel.messages.fetch({
         limit: 4,
@@ -90,7 +111,19 @@ client.on(Events.MessageCreate, async (message) => {
         })
         .join("\n");
 
-      const finalPromptText = `CHAT HISTORY:\n${conversationHistory}\n\nCOACH FRANK INSTRUCTIONS:\nReply directly to ${message.author.username}. \nCRITICAL RULES:\n1. You MUST use the insult "${randomInsult}" in your response.\n2. You MUST use the slang "${randomSlang}" in your response.\n3. DO NOT output code blocks or your name. Just speak naturally.`;
+      const finalPromptText = `
+CHAT HISTORY:
+${conversationHistory}
+
+COACH FRANK INSTRUCTIONS:
+Reply directly to ${message.author.username}. 
+${rantInstruction}
+
+CRITICAL RULES:
+1. You MUST use the insult "${randomInsult}" in your response.
+2. You MUST use the slang "${randomSlang}" in your response.
+3. If an M-CORP employee is talking to you, show them ZERO respect. Call out their soft hands, their corporate vests, and their "Knob Day" nonsense.
+4. DO NOT output code blocks or your name. Just speak naturally.`;
 
       let parts = [];
       const hasImage =

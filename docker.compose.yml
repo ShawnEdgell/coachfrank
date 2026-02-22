@@ -2,6 +2,20 @@ services:
   coach-frank:
     build: .
     container_name: coach_frank_bot
+    command: node src/index.js
+    restart: always
+    env_file:
+      - .env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  mcorp-board:
+    build: .
+    container_name: mcorp_board_bot
+    command: node src/mcorp.js
     restart: always
     env_file:
       - .env
