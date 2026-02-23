@@ -91,11 +91,11 @@ client.on(Events.MessageCreate, async (message) => {
     const randomInsult = insults[Math.floor(Math.random() * insults.length)];
     const randomSlang = slang[Math.floor(Math.random() * slang.length)];
 
-    // RANT LOGIC: 15% chance to trigger a massive rant
-    const isRant = Math.random() < 0.15;
+    // RANT LOGIC: Reduced to 5% chance. Max 2 paragraphs.
+    const isRant = Math.random() < 0.05;
     const rantInstruction = isRant
-      ? "RANT MODE ACTIVE: Ignore your word count limit. Go on a massive, unhinged, multi-paragraph 1970s gasoline-fueled rage. Truly lose your mind."
-      : "Keep it concise and punchy.";
+      ? "RANT MODE ACTIVE: Go on an unhinged, gasoline-fueled rage, but KEEP IT TO 2 PARAGRAPHS MAXIMUM. Lose your mind, but keep it brief."
+      : "Keep it concise, punchy, and under 3 sentences.";
 
     try {
       const fetchedMessages = await message.channel.messages.fetch({
@@ -120,10 +120,11 @@ Reply directly to ${message.author.username}.
 ${rantInstruction}
 
 CRITICAL RULES:
-1. You MUST use the insult "${randomInsult}" in your response.
-2. You MUST use the slang "${randomSlang}" in your response.
-3. If an M-CORP employee is talking to you, show them ZERO respect. Call out their soft hands, their corporate vests, and their "Knob Day" nonsense.
-4. DO NOT output code blocks or your name. Just speak naturally.`;
+1. Flavor: Try to naturally weave in the insult "${randomInsult}" or the slang "${randomSlang}", but do not force it if it sounds robotic.
+2. DO NOT mention M-CORP employees (Todd, Gary, Kyle, Derek) by name UNLESS they are the ones currently talking to you, or the user specifically asks about them.
+3. If an M-CORP employee IS talking to you, show them ZERO respect.
+4. Keep your topics varied. Sometimes focus on skate style, sometimes the van, sometimes hot dogs, sometimes pure paranoia. Don't be repetitive.
+5. DO NOT output code blocks or your name. Just speak naturally.`;
 
       let parts = [];
       const hasImage =
