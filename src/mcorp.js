@@ -36,10 +36,10 @@ const setupBot = (client, command, slopArray, name) => {
 };
 
 // Wire up the trigger commands
-setupBot(todd, "!todd", toddSlop, "M-CORP TODD");
-setupBot(gary, "!gary", garySlop, "M-CORP GARY");
-setupBot(kyle, "!kyle", kyleSlop, "M-CORP KYLE");
-setupBot(derek, "!derek", derekSlop, "INTERN DEREK");
+setupBot(todd, "todd", toddSlop, "M-CORP TODD");
+setupBot(gary, "gary", garySlop, "M-CORP GARY");
+setupBot(kyle, "kyle", kyleSlop, "M-CORP KYLE");
+setupBot(derek, "derek", derekSlop, "INTERN DEREK");
 
 // Boot them all up using the .env file
 todd.login(process.env.MCORP_TODD_TOKEN);
