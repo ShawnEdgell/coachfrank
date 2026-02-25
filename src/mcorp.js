@@ -18,24 +18,30 @@ const kyle = new Client({ intents });
 const derek = new Client({ intents });
 
 // --- THE PUPPET MASTER FUNCTION ---
-const setupBot = (client, command, slopArray, name) => {
+const setupBot = (client, nameTrigger, slopArray, logName) => {
   client.once(Events.ClientReady, (c) => {
-    console.log(`👔 ${name} ONLINE: ${c.user.tag}`);
+    console.log(`👔 ${logName} ONLINE: ${c.user.tag}`);
   });
 
   client.on(Events.MessageCreate, async (message) => {
-    // We only want the bots responding to YOUR manual commands for now
+    // We only want the bots responding to humans
     if (message.author.bot) return;
 
-    if (message.content === command) {
-      console.log(`[TRIGGER]: ${name} is deploying corporate slop...`);
+    // \b means "word boundary". 'i' means case-insensitive.
+    // This ensures it triggers on "todd" or "Todd!", but NOT "toddy"
+    const triggerRegex = new RegExp(`\\b${nameTrigger}\\b`, "i");
+
+    if (triggerRegex.test(message.content)) {
+      console.log(
+        `[TRIGGER]: ${logName} heard their name and is deploying corporate slop...`,
+      );
       const randomMsg = slopArray[Math.floor(Math.random() * slopArray.length)];
       await message.channel.send(randomMsg);
     }
   });
 };
 
-// Wire up the trigger commands
+// Wire up the triggers using just their names
 setupBot(todd, "todd", toddSlop, "M-CORP TODD");
 setupBot(gary, "gary", garySlop, "M-CORP GARY");
 setupBot(kyle, "kyle", kyleSlop, "M-CORP KYLE");
