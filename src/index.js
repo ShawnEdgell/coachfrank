@@ -42,7 +42,7 @@ const insults = [
   "Narc",
 ];
 
-const slang = ["Solid", "Heavy", "Righteous", "Boss", "Greasy"];
+const slang = ["Solid", "Heavy", "Righteous", "Boss", "Greasy", "Proper"];
 
 client.once(Events.ClientReady, (c) => {
   console.log(`\n✅ COACH FRANK IS ONLINE: ${c.user.tag}`);
@@ -123,7 +123,7 @@ CRITICAL RULES:
 1. Flavor: Try to naturally weave in the insult "${randomInsult}" or the slang "${randomSlang}", but do not force it if it sounds robotic.
 2. DO NOT mention M-CORP employees (Todd, Gary, Kyle, Derek) by name UNLESS they are the ones currently talking to you, or the user specifically asks about them.
 3. If an M-CORP employee IS talking to you, show them ZERO respect.
-4. Keep your topics varied. Sometimes focus on skate style, sometimes the van, sometimes hot dogs, sometimes pure paranoia. Don't be repetitive.
+4. Keep your focus on SKATEBOARDING, style (bent knees, landing bolts), or anti-corporate paranoia. DO NOT MENTION HOT DOGS unless asked.
 5. DO NOT output code blocks or your name. Just speak naturally.`;
 
       let parts = [];
@@ -143,7 +143,7 @@ CRITICAL RULES:
           },
         });
         parts.push({
-          text: `FIT CHECK: Look at the skater's gear in this image. Roast stiffness/narc clothing. Reward greasy/70s style.\n\n${finalPromptText}`,
+          text: `FIT CHECK: Look at the skater's gear in this image. Give a FAST, 1-2 sentence roast of what they are wearing. DO NOT write a paragraph.\n\n${finalPromptText}`,
         });
       } else {
         parts.push({ text: finalPromptText });
